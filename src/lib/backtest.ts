@@ -85,7 +85,7 @@ export function runBacktest(
     const swingLow = Math.min(...window.map((c) => c.low));
     const funding = nearestFunding(fundingHistory, current.time);
 
-    const closeThreshold = 0.004;
+    const closeThreshold = 0.006;
     const distToHigh = (swingHigh - current.close) / current.close;
     const distToLow = (current.close - swingLow) / current.close;
 
@@ -93,9 +93,9 @@ export function runBacktest(
 
     // Funding très positif = marché crowded long -> proche d'un support pris,
     // risque de continuation baissière ; inverse pour funding négatif
-    if (distToLow < closeThreshold && funding > 0.0005) {
+    if (distToLow < closeThreshold && funding > 0.0002) {
       signal = "vente";
-    } else if (distToHigh < closeThreshold && funding < -0.0005) {
+    } else if (distToHigh < closeThreshold && funding < -0.0002) {
       signal = "achat";
     }
 
