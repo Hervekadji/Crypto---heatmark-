@@ -6,6 +6,7 @@ import { fetchOrderBook, fetchOpenInterest, fetchFundingRate } from "@/lib/binan
 import { computeLiquidityZones, computeLiquidationClusters, computeSignal, Signal, Candle } from "@/lib/signal";
 import { fetchGoldCandles } from "@/lib/gold";
 import { computeGoldSignal } from "@/lib/gold-signal";
+import { computeVolumeZoneSignal, VolumeZoneSignal } from "@/lib/volumeZoneSignal";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h"];
 const ASSETS = [
@@ -24,6 +25,7 @@ export default function Home() {
   const [timeframe, setTimeframe] = useState("15m");
   const [loading, setLoading] = useState(true);
   const [signal, setSignal] = useState<{ signal: Signal; reason: string } | null>(null);
+  const [volumeSignal, setVolumeSignal] = useState<VolumeZoneSignal | null>(null);
   const [multiSignals, setMultiSignals] = useState<Record<string, Signal>>({});
 
   const asset = ASSETS.find((a) => a.value === assetValue)!;
@@ -90,7 +92,14 @@ export default function Home() {
           chart.timeScale().fitContent();
           setLoading(false);
 
-          recentCandlesRef.current = candles.slice(-10).map((c: any) => ({ high: c.high, low: c.low }));
+          recentCandlesRef.current = data.slice(-50).map((d: any) => ({
+        time: d[0] / 1000,
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4]),
+        volume: parseFloat(d[5]),
+      }));
           const currentPrice = candles[candles.length - 1].close;
           await refreshSignal(currentPrice);
         });
@@ -172,6 +181,8 @@ export default function Home() {
       const clusters = computeLiquidationClusters(currentPrice, oi, funding.fundingRate);
       const result = computeSignal(currentPrice, zones, clusters, recentCandlesRef.current);
       setSignal(result);
+      const vz = computeVolumeZoneSignal(recentCandlesRef.current as any);
+      setVolumeSignal(vz);
 
       priceLinesRef.current.forEach((line) => candleSeriesRef.current?.removePriceLine(line));
       priceLinesRef.current = [];
@@ -265,6 +276,16 @@ export default function Home() {
             {signal.signal}
           </div>
           <div className="text-xs text-zinc-400 mt-1">{signal.reason}</div>
+        </div>
+      )}
+
+      {asset.type === "crypto" && volumeSignal && (
+        <div className="mt-3 p-3 rounded-lg border border-zinc-700 bg-zinc-900">
+          <div className="text-xs uppercase text-zinc-400 mb-1">Volume / Zone</div>
+          <div className="text-sm font-bold uppercase">
+            {volumeSignal.signal} ({volumeSignal.confidence}%)
+          </div>
+          <div className="text-xs text-zinc-400 mt-1">{volumeSignal.reason}</div>
         </div>
       )}
 
