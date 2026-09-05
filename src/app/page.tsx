@@ -13,6 +13,19 @@ const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h"];
 const ASSETS = [
   { label: "BTC", value: "BTCUSDT", type: "crypto" as const },
   { label: "ETH", value: "ETHUSDT", type: "crypto" as const },
+  { label: "SOL", value: "SOLUSDT", type: "crypto" as const },
+  { label: "BNB", value: "BNBUSDT", type: "crypto" as const },
+  { label: "XRP", value: "XRPUSDT", type: "crypto" as const },
+  { label: "ADA", value: "ADAUSDT", type: "crypto" as const },
+  { label: "DOGE", value: "DOGEUSDT", type: "crypto" as const },
+  { label: "AVAX", value: "AVAXUSDT", type: "crypto" as const },
+  { label: "DOT", value: "DOTUSDT", type: "crypto" as const },
+  { label: "LINK", value: "LINKUSDT", type: "crypto" as const },
+  { label: "LTC", value: "LTCUSDT", type: "crypto" as const },
+  { label: "TRX", value: "TRXUSDT", type: "crypto" as const },
+  { label: "TON", value: "TONUSDT", type: "crypto" as const },
+  { label: "SHIB", value: "SHIBUSDT", type: "crypto" as const },
+  { label: "SUI", value: "SUIUSDT", type: "crypto" as const },
   { label: "GOLD", value: "GOLD", type: "commodity" as const },
 ];
 
