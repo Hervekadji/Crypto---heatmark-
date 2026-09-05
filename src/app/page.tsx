@@ -26,6 +26,9 @@ const ASSETS = [
   { label: "TON", value: "TONUSDT", type: "crypto" as const },
   { label: "SHIB", value: "SHIBUSDT", type: "crypto" as const },
   { label: "SUI", value: "SUIUSDT", type: "crypto" as const },
+  { label: "UNI", value: "UNIUSDT", type: "crypto" as const },
+  { label: "XLM", value: "XLMUSDT", type: "crypto" as const },
+  { label: "FARTCOIN", value: "FARTCOINUSDT", type: "crypto" as const },
   { label: "GOLD", value: "GOLD", type: "commodity" as const },
 ];
 
