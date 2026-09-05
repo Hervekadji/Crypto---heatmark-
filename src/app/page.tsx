@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, ColorType, CandlestickSeries, HistogramSeries } from "lightweight-charts";
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, createSeriesMarkers} from "lightweight-charts";
 import { fetchOrderBook, fetchOpenInterest, fetchFundingRate } from "@/lib/binance";
 import { computeLiquidityZones, computeLiquidationClusters, computeSignal, Signal, Candle } from "@/lib/signal";
 import { fetchGoldCandles } from "@/lib/gold";
@@ -203,7 +203,9 @@ export default function Home() {
             shape: s.direction === "bullish" ? "arrowUp" : "arrowDown",
             text: `PIC VOL x${s.volumeRatio}`,
           }));
-        candleSeriesRef.current?.setMarkers(spikeMarkers);
+        if (candleSeriesRef.current) {
+          createSeriesMarkers(candleSeriesRef.current, spikeMarkers as any);
+        }
       } catch (vzError) {
         console.error("Erreur volumeSignal:", vzError);
         setVolumeSignal({
