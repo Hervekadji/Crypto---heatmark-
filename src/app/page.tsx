@@ -181,8 +181,18 @@ export default function Home() {
       const clusters = computeLiquidationClusters(currentPrice, oi, funding.fundingRate);
       const result = computeSignal(currentPrice, zones, clusters, recentCandlesRef.current);
       setSignal(result);
-      const vz = computeVolumeZoneSignal(recentCandlesRef.current as any);
-      setVolumeSignal(vz);
+      try {
+        const vz = computeVolumeZoneSignal(recentCandlesRef.current as any);
+        setVolumeSignal(vz);
+      } catch (vzError) {
+        console.error("Erreur volumeSignal:", vzError);
+        setVolumeSignal({
+          signal: "neutre",
+          confidence: 0,
+          reason: `DEBUG erreur: ${vzError instanceof Error ? vzError.message : String(vzError)}`,
+          nearestZone: null,
+        });
+      }
 
       priceLinesRef.current.forEach((line) => candleSeriesRef.current?.removePriceLine(line));
       priceLinesRef.current = [];
