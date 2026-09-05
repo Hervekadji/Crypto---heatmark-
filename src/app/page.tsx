@@ -93,7 +93,7 @@ export default function Home() {
 
     if (asset.type === "crypto") {
       fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${asset.value}&interval=${timeframe}&limit=200`
+        `${klinesBaseUrl(asset.value)}?symbol=${asset.value}&interval=${timeframe}&limit=200`
       )
         .then((res) => res.json())
         .then(async (data) => {
@@ -272,7 +272,7 @@ export default function Home() {
       TIMEFRAMES.map(async (tf) => {
         try {
           const res = await fetch(
-            `https://api.binance.com/api/v3/klines?symbol=${assetValue}&interval=${tf}&limit=10`
+            `${klinesBaseUrl(assetValue)}?symbol=${assetValue}&interval=${tf}&limit=10`
           );
           const data = await res.json();
           const candles = data.map((d: any) => ({
