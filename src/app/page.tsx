@@ -7,6 +7,7 @@ import { computeLiquidityZones, computeLiquidationClusters, computeSignal, Signa
 import { fetchGoldCandles } from "@/lib/gold";
 import { computeGoldSignal } from "@/lib/gold-signal";
 import { computeVolumeZoneSignal, VolumeZoneSignal } from "@/lib/volumeZoneSignal";
+import { detectVolumeSpikes } from "@/lib/volumeSpike";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h"];
 const ASSETS = [
@@ -190,6 +191,19 @@ export default function Home() {
         const vz = computeVolumeZoneSignal(recentCandlesRef.current as any);
         setVolumeSignal(vz);
         vzResultForNotif = vz;
+
+        // Marqueurs visuels des pics de volume sur le graphique
+        const spikes = detectVolumeSpikes(recentCandlesRef.current as any, 20, 2);
+        const spikeMarkers = spikes
+          .filter((s) => s.isSpike)
+          .map((s) => ({
+            time: s.time as any,
+            position: s.direction === "bullish" ? "belowBar" : "aboveBar",
+            color: s.direction === "bullish" ? "#22c55e" : "#ef4444",
+            shape: s.direction === "bullish" ? "arrowUp" : "arrowDown",
+            text: `PIC VOL x${s.volumeRatio}`,
+          }));
+        candleSeriesRef.current?.setMarkers(spikeMarkers);
       } catch (vzError) {
         console.error("Erreur volumeSignal:", vzError);
         setVolumeSignal({
