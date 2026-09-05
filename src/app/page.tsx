@@ -22,6 +22,10 @@ export default function Home() {
   const priceLinesRef = useRef<any[]>([]);
   const recentCandlesRef = useRef<Candle[]>([]);
   const [assetValue, setAssetValue] = useState("BTCUSDT");
+  const [notifStatus, setNotifStatus] = useState<"default" | "granted" | "denied">(
+    typeof Notification !== "undefined" ? (Notification.permission as any) : "default"
+  );
+  const lastNotifKey = useRef<string>("");
   const [timeframe, setTimeframe] = useState("15m");
   const [loading, setLoading] = useState(true);
   const [signal, setSignal] = useState<{ signal: Signal; reason: string } | null>(null);
@@ -181,9 +185,11 @@ export default function Home() {
       const clusters = computeLiquidationClusters(currentPrice, oi, funding.fundingRate);
       const result = computeSignal(currentPrice, zones, clusters, recentCandlesRef.current);
       setSignal(result);
+      let vzResultForNotif: VolumeZoneSignal | null = null;
       try {
         const vz = computeVolumeZoneSignal(recentCandlesRef.current as any);
         setVolumeSignal(vz);
+        vzResultForNotif = vz;
       } catch (vzError) {
         console.error("Erreur volumeSignal:", vzError);
         setVolumeSignal({
@@ -192,6 +198,23 @@ export default function Home() {
           reason: `DEBUG erreur: ${vzError instanceof Error ? vzError.message : String(vzError)}`,
           nearestZone: null,
         });
+      }
+
+      // Notification de confirmation croisée
+      if (
+        notifStatus === "granted" &&
+        result.signal !== "neutre" &&
+        vzResultForNotif &&
+        vzResultForNotif.signal === result.signal &&
+        vzResultForNotif.confidence >= 60
+      ) {
+        const key = `${assetValue}-${result.signal}-${Math.round(vzResultForNotif.confidence / 10)}`;
+        if (lastNotifKey.current !== key) {
+          lastNotifKey.current = key;
+          new Notification(`Signal ${result.signal.toUpperCase()} confirmé — ${assetValue}`, {
+            body: `Liquidation + Volume/Zone d'accord (confiance ${vzResultForNotif.confidence}%)`,
+          });
+        }
       }
 
       priceLinesRef.current.forEach((line) => candleSeriesRef.current?.removePriceLine(line));
@@ -244,6 +267,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-4">
       <h1 className="text-xl font-bold mb-4">Crypto Signal — Heatmap</h1>
+
+      {notifStatus !== "granted" && (
+        <button
+          onClick={() => {
+            Notification.requestPermission().then((perm) => setNotifStatus(perm as any));
+          }}
+          className="mb-3 px-3 py-2 rounded-lg border border-zinc-700 text-xs text-zinc-300 bg-zinc-900"
+        >
+          🔔 Autoriser les notifications
+        </button>
+      )}
 
       <div className="flex gap-2 mb-3">
         {ASSETS.map((a) => (
