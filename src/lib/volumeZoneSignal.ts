@@ -1,7 +1,3 @@
-// volumeZoneSignal.ts
-// Combine pics de volume + zones support/résistance pour générer un signal de confirmation
-// À utiliser comme 3e composante à côté de ta logique liquidation + heatmap
-
 import { Candle, detectVolumeSpikes } from "./volumeSpike";
 import { detectSwingPoints, clusterZones, Zone } from "./swingZones";
 
@@ -9,21 +5,19 @@ export type SignalType = "achat" | "vente" | "neutre";
 
 export interface VolumeZoneSignal {
   signal: SignalType;
-  confidence: number; // 0 à 100
+  confidence: number;
   reason: string;
   nearestZone: Zone | null;
 }
 
-/**
- * Détermine si le prix actuel est proche d'une zone donnée (en %)
- */
 function isNearZone(price: number, zone: Zone, tolerancePct: number = 0.5): boolean {
   const diffPct = (Math.abs(price - zone.priceAvg) / zone.priceAvg) * 100;
   return diffPct <= tolerancePct;
 }
 
 /**
- * Génère un signal basé sur : dernière bougie + pic de volume + proximité d'une zone
+ * Génère un signal basé sur : pic de volume dans une fenêtre récente + proximité d'une zone
+ * spikeWindow = nombre de bougies récentes à considérer (3 = bougie actuelle + 2 précédentes)
  */
 export function computeVolumeZoneSignal(
   candles: Candle[],
@@ -33,6 +27,7 @@ export function computeVolumeZoneSignal(
     swingLookback?: number;
     zoneTolerancePct?: number;
     priceZoneTolerancePct?: number;
+    spikeWindow?: number;
   }
 ): VolumeZoneSignal {
   const {
@@ -41,6 +36,7 @@ export function computeVolumeZoneSignal(
     swingLookback = 3,
     zoneTolerancePct = 0.3,
     priceZoneTolerancePct = 0.5,
+    spikeWindow = 3,
   } = options || {};
 
   if (candles.length < volumePeriod + swingLookback * 2) {
@@ -48,49 +44,62 @@ export function computeVolumeZoneSignal(
   }
 
   const spikes = detectVolumeSpikes(candles, volumePeriod, volumeThreshold);
-  const lastCandle = spikes[spikes.length - 1];
+  const lastIndex = spikes.length - 1;
+
+  // Cherche le pic de volume le plus récent dans la fenêtre (0 = bougie actuelle)
+  let spikeCandle: (typeof spikes)[number] | null = null;
+  let candlesAgo = -1;
+  for (let i = 0; i < spikeWindow; i++) {
+    const idx = lastIndex - i;
+    if (idx < 0) break;
+    if (spikes[idx].isSpike) {
+      spikeCandle = spikes[idx];
+      candlesAgo = i;
+      break;
+    }
+  }
 
   const swingPoints = detectSwingPoints(candles, swingLookback);
   const zones = clusterZones(swingPoints, zoneTolerancePct);
 
-  const currentPrice = lastCandle.close;
+  const currentPrice = candles[candles.length - 1].close;
   const nearbyZone = zones.find((z) => isNearZone(currentPrice, z, priceZoneTolerancePct)) || null;
 
-  // Pas de pic de volume => pas de confirmation forte
-  if (!lastCandle.isSpike) {
+  if (!spikeCandle) {
     return {
       signal: "neutre",
       confidence: 20,
-      reason: "Pas de pic de volume détecté sur la dernière bougie",
+      reason: `Pas de pic de volume detecte sur les ${spikeWindow} dernieres bougies`,
       nearestZone: nearbyZone,
     };
   }
 
-  // Pic de volume + proche d'une zone => signal fort
+  const agoLabel =
+    candlesAgo === 0 ? "la derniere bougie" : `il y a ${candlesAgo} bougie${candlesAgo > 1 ? "s" : ""}`;
+
   if (nearbyZone) {
-    if (nearbyZone.type === "support" && lastCandle.direction === "bearish") {
+    if (nearbyZone.type === "support" && spikeCandle.direction === "bearish") {
       return {
         signal: "achat",
         confidence: Math.min(60 + nearbyZone.touches * 10, 95),
-        reason: `Pic de volume (x${lastCandle.volumeRatio}) sur bougie baissière proche d'un support testé ${nearbyZone.touches} fois → épuisement vendeur probable`,
+        reason: `Pic de volume (x${spikeCandle.volumeRatio}) ${agoLabel} sur bougie baissiere proche d'un support teste ${nearbyZone.touches} fois -> epuisement vendeur probable`,
         nearestZone: nearbyZone,
       };
     }
-    if (nearbyZone.type === "resistance" && lastCandle.direction === "bullish") {
+    if (nearbyZone.type === "resistance" && spikeCandle.direction === "bullish") {
       return {
         signal: "vente",
         confidence: Math.min(60 + nearbyZone.touches * 10, 95),
-        reason: `Pic de volume (x${lastCandle.volumeRatio}) sur bougie haussière proche d'une résistance testée ${nearbyZone.touches} fois → épuisement acheteur probable`,
+        reason: `Pic de volume (x${spikeCandle.volumeRatio}) ${agoLabel} sur bougie haussiere proche d'une resistance testee ${nearbyZone.touches} fois -> epuisement acheteur probable`,
         nearestZone: nearbyZone,
       };
     }
   }
 
-  // Pic de volume mais pas de zone claire ou pas de configuration cohérente
   return {
     signal: "neutre",
     confidence: 35,
-    reason: `Pic de volume détecté (x${lastCandle.volumeRatio}) mais sans confirmation de zone claire`,
+    reason: `Pic de volume detecte (x${spikeCandle.volumeRatio}) ${agoLabel} mais sans confirmation de zone claire`,
     nearestZone: nearbyZone,
   };
 }

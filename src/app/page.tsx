@@ -29,6 +29,7 @@ const ASSETS = [
   { label: "UNI", value: "UNIUSDT", type: "crypto" as const },
   { label: "XLM", value: "XLMUSDT", type: "crypto" as const },
   { label: "FARTCOIN", value: "FARTCOINUSDT", type: "crypto" as const },
+  { label: "TAO", value: "TAOUSDT", type: "crypto" as const },
   { label: "GOLD", value: "GOLD", type: "commodity" as const },
 ];
 
@@ -224,12 +225,7 @@ export default function Home() {
         }
       } catch (vzError) {
         console.error("Erreur volumeSignal:", vzError);
-        setVolumeSignal({
-          signal: "neutre",
-          confidence: 0,
-          reason: `DEBUG erreur: ${vzError instanceof Error ? vzError.message : String(vzError)}`,
-          nearestZone: null,
-        });
+        setVolumeSignal(null);
       }
 
       // Notification de confirmation croisée
