@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, createSeriesMarkers} from "lightweight-charts";
 import { fetchOrderBook, fetchOpenInterest, fetchFundingRate } from "@/lib/binance";
@@ -295,6 +296,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-4">
       <h1 className="text-xl font-bold mb-4">Crypto Signal — Heatmap</h1>
+
+      <Link
+        href="/backtest"
+        className="inline-block mb-3 px-3 py-2 rounded-lg border border-zinc-700 text-xs text-zinc-300 bg-zinc-900"
+      >
+        📊 Voir le Backtest
+      </Link>
 
       {notifStatus !== "granted" && (
         <button
